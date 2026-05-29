@@ -1,14 +1,26 @@
 version: '3.8'
 
 services:
-  echo-server:
-    build: .
-    container_name: timp_echo_server
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: timp_server
     ports:
       - "33333:33333"
     volumes:
       - server_data:/app
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo 'SHA384:test' | nc -q1 localhost 33333"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+# The Qt GUI client (Client/) runs on the host machine and connects to localhost:33333.
+# To build it locally:
+#   cd Client && qmake Client.pro && make
 
 volumes:
   server_data:
