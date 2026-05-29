@@ -1,7 +1,8 @@
 # Проект по дисциплине «Технологии и методы программирования»
 
 **Учебная группа:** 251-354  
-**Репозиторий:** [timofey3534/TIMP_2026](https://github.com/timofey3534/TIMP_2026)
+**Репозиторий:** [timofey3534/TIMP_2026](https://github.com/timofey3534/TIMP_2026)  
+**Wiki:** [Документация проекта](https://github.com/timofey3534/TIMP_2026/wiki)
 
 ---
 
@@ -16,16 +17,14 @@
 
 ---
 
-## Техническое задание (Вариант 25)
+## Вариант задания (Вариант 25)
 
-Программный комплекс на базе Qt TCP-сервера, реализующий:
-
-| Алгоритм | Описание |
+| Алгоритм | Реализация |
 |:---|:---|
-| **AES-128-CBC** | Симметричное шифрование / дешифрование (OpenSSL) |
-| **SHA-384** | Хеширование данных (Qt `QCryptographicHash`) |
-| **Метод хорд** | Решение нелинейного уравнения f(x) = x³ − x − 2 |
-| **Стеганография** | Внедрение текстового сообщения в PNG-изображение (LSB) |
+| **AES-128-CBC** | Симметричное шифрование/дешифрование (OpenSSL EVP) |
+| **SHA-384** | Хеширование (Qt `QCryptographicHash`) |
+| **Метод хорд** | Решение f(x) = x³ − x − 2 = 0 |
+| **Стеганография** | LSB внедрение текста в PNG (`QImage`) |
 
 ---
 
@@ -33,67 +32,75 @@
 
 ```
 TIMP_2026/
-├── EchoServer/               # Qt-проект сервера
+├── EchoServer/               # Qt TCP-сервер (порт 33333)
 │   ├── EchoServer.pro
 │   ├── main.cpp
-│   ├── mytcpserver.h/.cpp    # TCP-сервер (Qt)
-│   ├── functionsforserver.h/.cpp  # реализация алгоритмов
-│   └── dataBase.h            # Singleton-обёртка над SQLite
+│   ├── mytcpserver.h/.cpp    # TCP-сервер (QTcpServer)
+│   ├── functionsforserver.h/.cpp  # Все 4 алгоритма
+│   └── dataBase.h            # Singleton SQLite-логгер
+├── Client/                   # Qt Widgets GUI клиент
+│   ├── Client.pro
+│   ├── mainwindow.h/.cpp     # Главное окно (4 вкладки)
+│   └── connectiondialog.h/.cpp  # Диалог подключения
 ├── UnitTests/                # Модульные тесты (QtTest)
 │   ├── UnitTests.pro
 │   └── tst_funcforserver_test.cpp
-├── Dockerfile
-├── docker-compose.yml
-└── README.md
+├── DataBase/                 # Демо работы с SQLite
+├── Singleton/                # Три реализации паттерна Singleton
+│   ├── singleton_classic.h   # Классическая (ручное удаление)
+│   └── singleton_safe.h      # С Destroyer + Meyers C++11
+├── docs/diagrams/            # UML диаграммы (PlantUML)
+│   ├── usecase.puml          # UseCase диаграмма
+│   └── classdiagram.puml     # Диаграмма классов
+├── Dockerfile                # Multi-stage build
+└── docker-compose.yml
 ```
 
 ---
 
-## Протокол сервера
-
-Сервер слушает порт **33333**. Команды отправляются строками (разделитель `\n` или `\x01`).
-
-| Команда | Пример |
-|:---|:---|
-| `SHA384:<данные>` | `SHA384:hello` |
-| `AES_ENCRYPT:<ключ>:<текст>` | `AES_ENCRYPT:mykey:hello world` |
-| `AES_DECRYPT:<ключ>:<hex>` | `AES_DECRYPT:mykey:3a7b...` |
-| `CHORD:<a>:<b>:<eps>` | `CHORD:1:2:0.0001` |
-| `STEG_EMBED:<src>:<dst>:<сообщение>` | `STEG_EMBED:/in.png:/out.png:secret` |
-| `STEG_EXTRACT:<путь>` | `STEG_EXTRACT:/out.png` |
-
-Неизвестная команда → `error`.
-
----
-
-## Запуск через Docker
+## Быстрый старт (Docker)
 
 ```bash
+git clone https://github.com/timofey3534/TIMP_2026.git
+cd TIMP_2026
 docker compose up --build
 ```
 
-Тест подключения:
-
+Тест:
 ```bash
-echo -e "SHA384:hello\n" | nc localhost 33333
+echo "SHA384:hello" | nc -q1 localhost 33333
+echo "CHORD:1:2:1e-9" | nc -q1 localhost 33333
 ```
 
 ---
 
-## Сборка локально (Linux / WSL)
+## Протокол сервера (порт 33333)
 
-```bash
-sudo apt install qtbase5-dev qt5-qmake libqt5sql5-sqlite libssl-dev
-cd EchoServer
-qmake EchoServer.pro && make
-./EchoServer
-```
+| Команда | Описание |
+|:---|:---|
+| `SHA384:<данные>` | SHA-384 хеш |
+| `AES_ENCRYPT:<ключ>:<текст>` | Шифрование AES-128-CBC → hex |
+| `AES_DECRYPT:<ключ>:<hex>` | Дешифрование |
+| `CHORD:<a>:<b>:<eps>` | Корень f(x)=x³−x−2 на [a,b] |
+| `STEG_EMBED:<src>:<dst>:<msg>` | Внедрить сообщение в PNG |
+| `STEG_EXTRACT:<path>` | Извлечь сообщение из PNG |
+
+Неизвестная команда → `error`
 
 ---
 
-## Запуск unit-тестов
+## Сборка вручную (Linux / WSL)
 
 ```bash
-cd UnitTests
-qmake UnitTests.pro && make && ./UnitTests
+# Зависимости
+sudo apt install qtbase5-dev qt5-qmake libqt5sql5-sqlite libqt5gui5 libssl-dev build-essential
+
+# Сервер
+cd EchoServer && qmake EchoServer.pro && make && ./EchoServer
+
+# GUI клиент
+cd Client && qmake Client.pro && make && ./Client
+
+# Unit-тесты
+cd UnitTests && qmake UnitTests.pro && make && ./UnitTests
 ```
