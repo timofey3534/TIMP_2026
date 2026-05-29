@@ -1,0 +1,15 @@
+#include <QApplication>
+#include "mainwindow.h"
+
+int main(int argc, char* argv[])
+{
+    QApplication a(argc, argv);
+    a.setApplicationName("TIMP 2026 Client");
+    a.setApplicationVersion("1.0");
+    a.setOrganizationName("MAMI");
+
+    MainWindow w;
+    w.show();
+
+    return a.exec();
+}
