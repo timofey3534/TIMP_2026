@@ -1,0 +1,105 @@
+@startuml ClassDiagram_TIMP2026
+
+skinparam classBackgroundColor #EEF5FF
+skinparam classBorderColor #3D7EBF
+skinparam classHeaderBackgroundColor #3D7EBF
+skinparam classHeaderFontColor #FFFFFF
+skinparam arrowColor #3D7EBF
+skinparam packageBorderColor #999999
+
+title Class Diagram — TIMP 2026
+
+' ─── Server side ─────────────────────────────────────────────────────────────
+
+package "EchoServer" {
+
+    class MyTcpServer <<QObject>> {
+        - mTcpServer : QTcpServer*
+        - mTcpSocket : QTcpSocket*
+        - m_buffer   : QByteArray
+        + MyTcpServer(parent : QObject*)
+        + ~MyTcpServer()
+        + slotNewConnection()   : void
+        + slotServerRead()      : void
+        + slotClientDisconnected() : void
+    }
+
+    class DataBase <<Singleton>> {
+        - m_db     : QSqlDatabase
+        - m_opened : bool
+        - DataBase()
+        + {static} instance() : DataBase&
+        + open(path : QString) : bool
+        + log(command : QString, result : QString) : void
+    }
+
+    class "«functions»\nfunctionsforserver" as FS {
+        + {static} parsing(command : QString) : QString
+        + {static} aesEncrypt(key : QString, plaintext : QString) : QString
+        + {static} aesDecrypt(key : QString, ciphertextHex : QString) : QString
+        + {static} sha384Hash(data : QString) : QString
+        + {static} chordMethod(a : double, b : double, eps : double) : QString
+        + {static} steganographyEmbed(src : QString, dst : QString, msg : QString) : QString
+        + {static} steganographyExtract(path : QString) : QString
+    }
+
+    note bottom of FS
+      f(x) = x³ − x − 2
+      AES: OpenSSL EVP AES-128-CBC
+      SHA: QCryptographicHash::Sha384
+      Steg: LSB in RGB channels (QImage)
+    end note
+}
+
+' ─── Client side ─────────────────────────────────────────────────────────────
+
+package "Client" {
+
+    class MainWindow <<QMainWindow>> {
+        - m_socket   : QTcpSocket*
+        - m_tabs     : QTabWidget*
+        - m_logView  : QTextEdit*
+        - m_buffer   : QByteArray
+        + MainWindow(parent : QWidget*)
+        + connectToServer(host : QString, port : int) : void
+        - onConnected()         : void
+        - onDisconnected()      : void
+        - onReadyRead()         : void
+        - sendCommand(cmd : QString) : void
+        - appendLog(msg : QString)   : void
+    }
+
+    class ConnectionDialog <<QDialog>> {
+        - m_hostEdit : QLineEdit*
+        - m_portEdit : QSpinBox*
+        + host() : QString
+        + port() : int
+    }
+}
+
+' ─── Unit Tests ──────────────────────────────────────────────────────────────
+
+package "UnitTests" {
+    class FuncForServer_Test <<QObject>> {
+        + test_parsing_invalid() : void
+        + test_sha384()          : void
+        + test_aes_roundtrip()   : void
+        + test_chord()           : void
+    }
+}
+
+' ─── Relationships ────────────────────────────────────────────────────────────
+
+MyTcpServer   ..>  FS         : «uses»
+MyTcpServer   ..>  DataBase   : «uses»
+DataBase       --o DataBase   : instance (Singleton)
+
+MainWindow    ..>  ConnectionDialog : «creates»
+
+FuncForServer_Test ..> FS : «tests»
+
+' Qt framework
+MyTcpServer --|> QObject
+MainWindow  --|> QMainWindow
+
+@enduml

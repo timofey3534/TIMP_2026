@@ -1,0 +1,71 @@
+@startuml UseCase_TIMP2026
+
+skinparam actorStyle awesome
+skinparam usecaseBackgroundColor #EEF5FF
+skinparam usecaseBorderColor #3D7EBF
+skinparam actorBorderColor #3D7EBF
+
+title Use Case Diagram — TIMP 2026 Server
+
+left to right direction
+
+actor "Пользователь\n(Client)" as User
+actor "Администратор\n(DevOps)" as Admin
+
+rectangle "TIMP 2026 System" {
+
+    package "Криптография" {
+        usecase "Зашифровать данные\n(AES-128-CBC)"        as UC_AES_ENC
+        usecase "Расшифровать данные\n(AES-128-CBC)"       as UC_AES_DEC
+        usecase "Вычислить хеш\n(SHA-384)"                 as UC_SHA384
+    }
+
+    package "Численные методы" {
+        usecase "Решить уравнение\n(Метод хорд)"           as UC_CHORD
+    }
+
+    package "Стеганография" {
+        usecase "Внедрить сообщение\nв изображение (LSB)"  as UC_STEG_E
+        usecase "Извлечь сообщение\nиз изображения"        as UC_STEG_X
+    }
+
+    package "Инфраструктура" {
+        usecase "Подключиться к серверу\n(TCP :33333)"     as UC_CONNECT
+        usecase "Просмотреть лог операций\n(SQLite DB)"    as UC_LOG
+        usecase "Запустить сервер\n(Docker)"               as UC_DOCKER
+    }
+}
+
+' User interactions
+User --> UC_CONNECT
+User --> UC_AES_ENC
+User --> UC_AES_DEC
+User --> UC_SHA384
+User --> UC_CHORD
+User --> UC_STEG_E
+User --> UC_STEG_X
+
+' Admin interactions
+Admin --> UC_DOCKER
+Admin --> UC_LOG
+
+' Dependencies
+UC_AES_ENC .> UC_CONNECT : <<include>>
+UC_AES_DEC .> UC_CONNECT : <<include>>
+UC_SHA384  .> UC_CONNECT : <<include>>
+UC_CHORD   .> UC_CONNECT : <<include>>
+UC_STEG_E  .> UC_CONNECT : <<include>>
+UC_STEG_X  .> UC_CONNECT : <<include>>
+
+note right of UC_CHORD
+  f(x) = x³ − x − 2
+  Параметры: a, b, ε
+end note
+
+note right of UC_STEG_E
+  Входные данные:
+  PNG-изображение + текст
+  Метод: LSB в RGB-каналах
+end note
+
+@enduml
