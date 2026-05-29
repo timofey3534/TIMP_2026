@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  echo-server:
+    build: .
+    container_name: timp_echo_server
+    ports:
+      - "33333:33333"
+    volumes:
+      - server_data:/app
+    restart: unless-stopped
+
+volumes:
+  server_data:
