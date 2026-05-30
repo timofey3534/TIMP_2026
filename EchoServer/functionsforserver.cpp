@@ -51,8 +51,9 @@ QString parsing(const QString& command)
 
 static QByteArray makeKey(const QString& key)
 {
-    QByteArray k = key.toUtf8();
-    k.resize(16);   // zero-pad or truncate to 16 bytes (AES-128)
+    QByteArray k(16, '\0');
+    const QByteArray src = key.toUtf8().left(16);
+    memcpy(k.data(), src.constData(), src.size());
     return k;
 }
 
